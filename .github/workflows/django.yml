@@ -32,28 +32,44 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Prepare files for deployment
+      - name: Clean up unnecessary files
         run: |
-          # Remove files that shouldn't be deployed
           find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
           find . -name "*.pyc" -delete 2>/dev/null || true
-          rm -rf .git .github venv .gitignore 2>/dev/null || true
-          ls -la  # Show what files will be deployed
+          rm -rf .git .github venv .gitignore README.md 2>/dev/null || true
+          echo "Files to upload:"
+          find . -type f | head -10
       
-      # Option 1: Try with lftp (most reliable for shared hosting)
-      - name: Install lftp
-        run: sudo apt-get update && sudo apt-get install -y lftp
-        
-      - name: Deploy via lftp
+      - name: Install ncftp
+        run: sudo apt-get update && sudo apt-get install -y ncftp
+      
+      - name: Test FTP connection
         run: |
-          lftp -c "
-            set ftp:ssl-allow no;
-            set ftp:passive-mode yes;
-            set net:timeout 10;
-            set net:max-retries 2;
-            set net:reconnect-interval-base 5;
-            set ftp:sync-mode off;
-            open -u ${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }};
-            mirror -R --delete --parallel=1 --exclude-glob='*.git*' --exclude-glob='*__pycache__*' . ./;
-            bye
-          "
+          echo "Testing FTP connection..."
+          ncftpls -u ${{ secrets.FTP_USERNAME }} -p ${{ secrets.FTP_PASSWORD }} ftp://${{ secrets.FTP_SERVER }}/
+      
+      - name: Upload main files
+        run: |
+          echo "Uploading main Python files..."
+          ncftpput -v -u ${{ secrets.FTP_USERNAME }} -p ${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }} ./ manage.py || true
+          ncftpput -v -u ${{ secrets.FTP_USERNAME }} -p ${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }} ./ requirements.txt || true
+          
+      - name: Upload database
+        run: |
+          echo "Uploading database..."
+          ncftpput -v -u ${{ secrets.FTP_USERNAME }} -p ${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }} ./ sampleauthdb || true
+          
+      - name: Upload authapp directory
+        run: |
+          echo "Uploading authapp..."
+          ncftpput -R -v -u ${{ secrets.FTP_USERNAME }} -p ${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }} ./ authapp/
+          
+      - name: Upload sampleauthapp directory  
+        run: |
+          echo "Uploading sampleauthapp..."
+          ncftpput -R -v -u ${{ secrets.FTP_USERNAME }} -p ${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }} ./ sampleauthapp/
+          
+      - name: Verify upload
+        run: |
+          echo "Verifying upload..."
+          ncftpls -u ${{ secrets.FTP_USERNAME }} -p ${{ secrets.FTP_PASSWORD }} ftp://${{ secrets.FTP_SERVER }}/ || true
