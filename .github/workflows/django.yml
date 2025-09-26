@@ -4,6 +4,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,6 +24,7 @@ jobs:
           pip install -r requirements.txt
       - name: Run Django Tests
         run: python manage.py test
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -30,33 +32,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # Clean up files that shouldn't be deployed
-      - name: Clean deployment files
+      - name: Prepare files for deployment
         run: |
-          find . -name "__pycache__" -type d -exec rm -rf {} + || true
-          find . -name "*.pyc" -delete || true
-          rm -rf .git .github venv || true
+          # Remove files that shouldn't be deployed
+          find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+          find . -name "*.pyc" -delete 2>/dev/null || true
+          rm -rf .git .github venv .gitignore 2>/dev/null || true
+          ls -la  # Show what files will be deployed
       
-      # Option 1: Use sebastianpopp/ftp-action (more reliable for shared hosting)
-      - name: FTP Deploy Alternative
-        uses: sebastianpopp/ftp-action@releases/v2
-        with:
-          host: ${{ secrets.FTP_SERVER }}
-          user: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          localDir: "."
-          remoteDir: "."
-          
-      # Option 2: Use raw FTP commands (uncomment if above doesn't work)
-      # - name: Install lftp
-      #   run: sudo apt-get update && sudo apt-get install -y lftp
-      # - name: Deploy via lftp
-      #   run: |
-      #     lftp -c "
-      #       open -u ${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }};
-      #       set ftp:passive-mode true;
-      #       set net:timeout 30;
-      #       set net:max-retries 3;
-      #       mirror -R --delete --parallel=3 --exclude='.git' --exclude='__pycache__' . ./;
-      #       bye
-      #     "
+      # Option 1: Try with lftp (most reliable for shared hosting)
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+        
+      - name: Deploy via lftp
+        run: |
+          lftp -c "
+            set ftp:ssl-allow no;
+            set ftp:passive-mode yes;
+            set net:timeout 10;
+            set net:max-retries 2;
+            set net:reconnect-interval-base 5;
+            set ftp:sync-mode off;
+            open -u ${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }};
+            mirror -R --delete --parallel=1 --exclude-glob='*.git*' --exclude-glob='*__pycache__*' . ./;
+            bye
+          "
