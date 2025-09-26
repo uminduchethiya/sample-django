@@ -11,7 +11,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-
+import pymysql
+pymysql.install_as_MySQLdb()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,7 +26,7 @@ SECRET_KEY = 'django-insecure-9*h9pa_g$1kq+s=3a%5pg^2u^r@y39shgga6g-39%amsu^y1nl
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['django.insaash.space', 'www.django.insaash.space', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -76,12 +77,15 @@ WSGI_APPLICATION = 'sampleauthapp.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME':'sampleauthdb',
-        'USER':'root',
-        'PASSWORD':'',
-        'HOST':'localhost',
-        'PORT':'3306'
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'sampleauthdb',
+        'USER': 'root',
+        'PASSWORD': '',
+        'HOST': '127.0.0.1',  # Try this instead of 'localhost'
+        'PORT': '3306',
+        'OPTIONS': {
+            'unix_socket': '/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock',
+        },
     }
 }
 AUTH_USER_MODEL = 'authapp.User'
