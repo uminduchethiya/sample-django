@@ -15,8 +15,7 @@ jobs:
         python-version: [3.12]
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
@@ -29,17 +28,14 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Django Tests
-        working-directory: ./sampleauthapp
-        run: |
-          python manage.py test
+        run: python manage.py test  # assume manage.py is in repo root
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: FTP Deploy
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -49,7 +45,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
           port: 21
-          local-dir: ./sampleauthapp
+          local-dir: ./   # deploy root if manage.py is here
           server-dir: ./
           exclude: |
             */.git
