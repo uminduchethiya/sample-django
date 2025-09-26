@@ -45,6 +45,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
           port: 21
+          passive: true  
           local-dir: ./   # deploy root if manage.py is here
           server-dir: ./
           exclude: |
