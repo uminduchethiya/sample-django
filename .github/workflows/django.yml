@@ -42,20 +42,18 @@ jobs:
 
       - name: Deploy via FTP
         run: |
-          lftp -u ${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }} <<EOF
+          lftp -u "${{ secrets.FTP_USERNAME }}","${{ secrets.FTP_PASSWORD }}" ${{ secrets.FTP_SERVER }} <<EOF
           set ftp:ssl-allow yes
           set ssl:verify-certificate no
           set ftp:passive-mode on
-          
-          # Since repo root = sampleauthapp, use ./ for everything
+      
           mirror -R ./authapp /authapp
           mirror -R ./sampleauthapp /sampleauthapp
           mirror -R ./templates /templates
-          
-          # Upload root files
+      
           put manage.py
           put requirements.txt
           put sampleauthdb
-          
+      
           quit
           EOF
