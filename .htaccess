@@ -1,0 +1,34 @@
+DirectoryIndex index.py
+Options +ExecCGI
+AddHandler cgi-script .py
+
+RewriteEngine On
+
+# Serve static files directly
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^.*$ - [L]
+
+# Route everything else to Django
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /index.py/$1 [L,QSA]
+
+# Security
+<Files "manage.py">
+  Order allow,deny
+  Deny from all
+</Files>
+<Files "*.pyc">
+  Order allow,deny
+  Deny from all
+</Files>
+<Files "requirements.txt">
+  Order allow,deny
+  Deny from all
+</Files>
+
+# Cache static files
+<FilesMatch "\.(css|js|png|jpg|jpeg|gif|ico|svg)$">
+  ExpiresActive On
+  ExpiresDefault "access plus 1 year"
+</FilesMatch>
