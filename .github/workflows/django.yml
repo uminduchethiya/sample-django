@@ -48,8 +48,8 @@ jobs:
           protocol: ftp
           port: 21
           passive: true
-          local-dir: ./          # repo root = sampleauthapp
-          server-dir: ./         # deploy to root on server
+          local-dir: ./        # local project root
+          server-dir: /public_html/   # must exist on server     # deploy to root on server
           exclude: |
             */.git
             */.github
